@@ -1,0 +1,7 @@
+import {
+  "Lucaswang5777/moontdms",
+  "moonbitlang/core/env",
+  "moonbitlang/core/debug",
+}
+
+pkgtype(kind: "executable")
