@@ -1,0 +1,5 @@
+import {
+  "Lucaswang5777/moontdms" @tdms,
+}
+
+pkgtype(kind: "executable")
