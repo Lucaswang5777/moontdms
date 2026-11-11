@@ -40,9 +40,7 @@ fn read_contiguous(
   if !flag(seg.toc, 8U) {
     return
   }
-  if flag(seg.toc, 32U) {
-    raise Unsupported("interleaved data not enabled")
-  }
+
   let r = Reader::new(
     bytes,
     seg.raw_offset,
@@ -85,6 +83,10 @@ fn read_contiguous(
   )
   state.samples += total
   for chunk = 0; chunk < chunks; chunk = chunk + 1 {
+    if flag(seg.toc, 32U) {
+      read_interleaved(r, channels, state)
+      continue
+    }
     for (i, idx) in channels {
       let target = state.doc.objects[i].values
       if idx.kind == Text {
