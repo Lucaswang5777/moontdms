@@ -1,0 +1,5 @@
+_build/
+.mooncakes/
+*.zip
+*.tdms
+__pycache__/
