@@ -25,6 +25,9 @@ def scalar(v):
 def compare(blob):
     moon=call('decode',hex=blob.hex())['objects']
     reference=TdmsFile.read(io.BytesIO(blob),raw_timestamps=True)
+    expected_paths = {channel.path for group in reference.groups() for channel in group.channels()}
+    actual_paths = {obj['path'] for obj in moon if obj['type'] is not None}
+    assert actual_paths == expected_paths, (actual_paths, expected_paths)
     for obj in moon:
         if len(obj['path'].split("/'"))!=3:continue
         # Test names here do not contain quoted slashes; the separate path tests do.
@@ -41,6 +44,17 @@ def compare(blob):
         else:expected=[scalar(v) for v in expected]
         assert obj['values']==expected,(path,obj['values'],expected)
     return len(moon)
+
+def assert_encoded(objects, **options):
+    blob = bytes.fromhex(call('encode', objects=objects, **options)['hex'])
+    actual = call('decode', hex=blob.hex())['objects']
+    assert len(actual) == len(objects)
+    for source, decoded in zip(objects, actual):
+        assert source['path'] == decoded['path'] and source['type'] == decoded['type']
+        assert source['values'] == decoded['values'], (source, decoded)
+        assert source.get('properties', []) == decoded['properties']
+    compare(blob)
+    return blob
 
 def segment(meta,raw,toc=14,big=False):
     endian='>' if big else '<'
@@ -91,13 +105,11 @@ def main():
              {'path':"/'g'/'b'",'type':8,'values':['0','18446744073709551615']}]
     for big in [False,True]:
         for interleaved in [False,True]:
-            encoded=call('encode',objects=objects,big_endian=big,interleaved=interleaved)
-            compare(bytes.fromhex(encoded['hex']));count+=1
+            assert_encoded(objects,big_endian=big,interleaved=interleaved);count+=1
     # All writable scalar families plus Unicode/string properties, both endiannesses.
     for kind,values in [(1,['-128','127']),(2,['-32768','32767']),(3,['-2147483648','2147483647']),(4,['-9223372036854775808','9223372036854775807']),(5,['0','255']),(6,['0','65535']),(7,['0','4294967295']),(8,['0','18446744073709551615']),(9,[-1.5,3.25]),(10,['NaN','Infinity','-Infinity']),(32,['',"a'b,\n测量"]),(33,[False,True]),(68,[{'seconds':'-1','fractions':'18446744073709551615'}])]:
         for big in [False,True]:
             objects=[{'path':"/'g'/'a'",'type':kind,'values':values,'properties':[{'name':'unit_string','type':32,'value':'µV'},{'name':'serial','type':8,'value':'18446744073709551615'}]}]
-            blob=bytes.fromhex(call('encode',objects=objects,big_endian=big)['hex'])
-            compare(blob);count+=1
+            assert_encoded(objects,big_endian=big);count+=1
     print(json.dumps({'reference' :'npTDMS 1.10.0','cases':count,'status':'pass'}))
 if __name__=='__main__':main()
