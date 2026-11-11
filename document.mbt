@@ -85,6 +85,9 @@ fn Document::validate(self : Document, limits : Limits) -> Unit raise TdmsError 
         "empty or duplicate property name",
       )
       names[p.name] = true
+      if p.name == "name" {
+        raise Unsupported("TDMS name-based object renaming")
+      }
       p.value.validate(p.kind)
       if properties >= limits.max_properties {
         raise Budget("properties")
