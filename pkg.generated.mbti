@@ -1,0 +1,181 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Lucaswang5777/moontdms"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn data_type(UInt32) -> DataType raise TdmsError
+
+pub fn decode_hex(String, limits? : Limits) -> Bytes raise TdmsError
+
+pub fn encode_hex(Bytes) -> String
+
+pub fn inspect(Bytes, limits? : Limits) -> Array[SegmentInfo] raise TdmsError
+
+pub fn parse_path(String) -> ObjectPath raise TdmsError
+
+pub fn process_json(String, limits? : Limits) -> String raise TdmsError
+
+pub fn read(Bytes, limits? : Limits) -> Document raise TdmsError
+
+pub fn write(Document, big_endian? : Bool, limits? : Limits) -> Bytes raise TdmsError
+
+pub fn write_interleaved(Document, big_endian? : Bool, limits? : Limits) -> Bytes raise TdmsError
+
+pub fn write_segments(Array[Document], big_endian? : Bool, interleaved? : Bool, limits? : Limits) -> Bytes raise TdmsError
+
+// Errors
+pub suberror TdmsError {
+  Invalid(String)
+  Unsupported(String)
+  Budget(String)
+} derive(@debug.Debug)
+pub fn TdmsError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+pub(all) struct DataObject {
+  path : ObjectPath
+  properties : Array[Property]
+  mut kind : DataType?
+  values : Array[Value]
+} derive(Eq, @debug.Debug)
+pub fn DataObject::equal(Self, Self) -> Bool
+pub fn DataObject::new(ObjectPath, kind? : DataType, values? : Array[Value], properties? : Array[Property]) -> Self
+pub fn DataObject::not_equal(Self, Self) -> Bool
+pub fn DataObject::property(Self, String) -> Value?
+pub fn DataObject::summary(Self) -> Summary raise TdmsError
+pub fn DataObject::to_repr(Self) -> @debug.Repr
+pub fn DataObject::waveform(Self) -> WaveformAxis raise TdmsError
+
+pub(all) enum DataType {
+  I8
+  I16
+  I32
+  I64
+  U8
+  U16
+  U32
+  U64
+  F32
+  F64
+  Text
+  Boolean
+  Time
+} derive(Eq, @debug.Debug)
+pub fn DataType::code(Self) -> UInt32
+pub fn DataType::equal(Self, Self) -> Bool
+pub fn DataType::not_equal(Self, Self) -> Bool
+pub fn DataType::to_repr(Self) -> @debug.Repr
+pub fn DataType::width(Self) -> Int32?
+
+pub(all) struct Document {
+  objects : Array[DataObject]
+} derive(Eq, @debug.Debug)
+pub fn Document::channel_paths(Self) -> Array[ObjectPath]
+pub fn Document::csv(Self, waveform_time? : Bool, limits? : Limits) -> String raise TdmsError
+pub fn Document::equal(Self, Self) -> Bool
+pub fn Document::find(Self, ObjectPath) -> DataObject?
+pub fn Document::new() -> Self
+pub fn Document::not_equal(Self, Self) -> Bool
+pub fn Document::select(Self, Array[ObjectPath], start? : Int32, end? : Int32, limits? : Limits) -> Self raise TdmsError
+pub fn Document::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Limits {
+  max_bytes : Int32
+  max_segments : Int32
+  max_objects : Int32
+  max_properties : Int32
+  max_string_bytes : Int32
+  max_samples : Int32
+} derive(Eq, @debug.Debug)
+pub fn Limits::default() -> Self
+pub fn Limits::equal(Self, Self) -> Bool
+pub fn Limits::not_equal(Self, Self) -> Bool
+pub fn Limits::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ObjectPath {
+  parts : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn ObjectPath::channel(String, String) -> Self
+pub fn ObjectPath::equal(Self, Self) -> Bool
+pub fn ObjectPath::group(String) -> Self
+pub fn ObjectPath::not_equal(Self, Self) -> Bool
+pub fn ObjectPath::root() -> Self
+pub fn ObjectPath::text(Self) -> String raise TdmsError
+pub fn ObjectPath::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Property {
+  name : String
+  kind : DataType
+  value : Value
+} derive(Eq, @debug.Debug)
+pub fn Property::equal(Self, Self) -> Bool
+pub fn Property::not_equal(Self, Self) -> Bool
+pub fn Property::to_repr(Self) -> @debug.Repr
+
+pub(all) struct SegmentInfo {
+  offset : Int32
+  raw_offset : Int32
+  end_offset : Int32
+  toc : UInt32
+  big_endian : Bool
+} derive(Eq, @debug.Debug)
+pub fn SegmentInfo::equal(Self, Self) -> Bool
+pub fn SegmentInfo::not_equal(Self, Self) -> Bool
+pub fn SegmentInfo::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Summary {
+  total : Int32
+  finite_count : Int32
+  nonfinite_count : Int32
+  minimum : Double?
+  maximum : Double?
+  mean : Double?
+  population_variance : Double?
+  rms : Double?
+} derive(Eq, @debug.Debug)
+pub fn Summary::equal(Self, Self) -> Bool
+pub fn Summary::not_equal(Self, Self) -> Bool
+pub fn Summary::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Timestamp {
+  seconds : Int64
+  fractions : UInt64
+} derive(Eq, @debug.Debug)
+pub fn Timestamp::compare(Self, Self) -> Int32
+pub fn Timestamp::equal(Self, Self) -> Bool
+pub fn Timestamp::not_equal(Self, Self) -> Bool
+pub fn Timestamp::to_repr(Self) -> @debug.Repr
+pub fn Timestamp::unix_seconds(Self) -> Double
+
+pub(all) enum Value {
+  Signed(Int64)
+  Unsigned(UInt64)
+  Real(Double)
+  Textual(String)
+  Logical(Bool)
+  Instant(Timestamp)
+} derive(Eq, @debug.Debug)
+pub fn Value::as_double(Self) -> Double raise TdmsError
+pub fn Value::equal(Self, Self) -> Bool
+pub fn Value::not_equal(Self, Self) -> Bool
+pub fn Value::text(Self) -> String
+pub fn Value::to_repr(Self) -> @debug.Repr
+
+pub(all) struct WaveformAxis {
+  increment : Double
+  offset : Double
+  start_time : Timestamp?
+  count : Int32
+} derive(Eq, @debug.Debug)
+pub fn WaveformAxis::at(Self, Int32) -> Double raise TdmsError
+pub fn WaveformAxis::equal(Self, Self) -> Bool
+pub fn WaveformAxis::not_equal(Self, Self) -> Bool
+pub fn WaveformAxis::to_repr(Self) -> @debug.Repr
+pub fn WaveformAxis::values(Self, max_samples? : Int32) -> Array[Double] raise TdmsError
+
+// Type aliases
+
+// Traits
