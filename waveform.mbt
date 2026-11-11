@@ -34,6 +34,13 @@ pub fn WaveformAxis::at(
   self : WaveformAxis,
   index : Int32,
 ) -> Double raise TdmsError {
+  demand(
+    self.count >= 0 &&
+    finite(self.offset) &&
+    finite(self.increment) &&
+    self.increment > 0.0,
+    "invalid waveform axis",
+  )
   demand(index >= 0 && index < self.count, "waveform index outside channel")
   let x = self.offset + self.increment * index.to_double()
   demand(finite(x), "waveform axis overflow")

@@ -68,6 +68,7 @@ fn Document::validate(self : Document, limits : Limits) -> Unit raise TdmsError 
   let mut samples = 0
   for obj in self.objects {
     let path = obj.path.text()
+    bounded_text(path, limits)
     demand(!paths.contains(path), "duplicate object path")
     paths[path] = true
     demand(
@@ -84,6 +85,8 @@ fn Document::validate(self : Document, limits : Limits) -> Unit raise TdmsError 
         !p.name.is_empty() && !names.contains(p.name),
         "empty or duplicate property name",
       )
+      bounded_text(p.name, limits)
+      bounded_value(p.value, limits)
       names[p.name] = true
       if p.name == "name" {
         raise Unsupported("TDMS name-based object renaming")
@@ -101,6 +104,7 @@ fn Document::validate(self : Document, limits : Limits) -> Unit raise TdmsError 
     if obj.kind is Some(kind) {
       for v in obj.values {
         v.validate(kind)
+        bounded_value(v, limits)
       }
     }
   }
@@ -117,3 +121,17 @@ pub extend Document with Eq::{equal, not_equal}
 
 ///|
 pub extend Document with @debug.Debug::{to_repr}
+
+///|
+fn bounded_text(text : String, limits : Limits) -> Unit raise TdmsError {
+  if @utf8.encode(text).length() > limits.max_string_bytes {
+    raise Budget("string bytes")
+  }
+}
+
+///|
+fn bounded_value(value : Value, limits : Limits) -> Unit raise TdmsError {
+  if value is Textual(text) {
+    bounded_text(text, limits)
+  }
+}

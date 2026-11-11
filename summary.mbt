@@ -23,7 +23,9 @@ pub fn DataObject::summary(self : DataObject) -> Summary raise TdmsError {
   let mut m2 = 0.0
   let mut scale = 0.0
   let mut squares = 0.0
+  let kind = self.kind.unwrap()
   for value in self.values {
+    value.validate(kind)
     let x = value.as_double()
     if !finite(x) {
       continue

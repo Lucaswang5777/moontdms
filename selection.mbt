@@ -64,6 +64,7 @@ pub fn Document::select(
       result.objects.push(copy_object(obj, 0, 0))
     }
   }
+  result.validate(limits)
   result
 }
 
