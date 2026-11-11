@@ -21,8 +21,10 @@ fn Reader::scalar(self : Reader, kind : DataType) -> Value raise TdmsError {
       Logical(n == 1UL)
     }
     Time => {
-      let fractions = self.uint(8)
-      let seconds = self.signed(8)
+      let first = self.uint(8)
+      let second = self.uint(8)
+      let fractions = if self.big { second } else { first }
+      let seconds = (if self.big { first } else { second }).reinterpret_as_int64()
       Instant({ seconds, fractions, })
     }
   }
@@ -52,10 +54,14 @@ fn Writer::scalar(
       }
     Textual(s) => self.string(s)
     Logical(b) => self.uint(if b { 1UL } else { 0UL }, 1)
-    Instant(t) => {
-      self.uint(t.fractions, 8)
-      self.uint(t.seconds.reinterpret_as_uint64(), 8)
-    }
+    Instant(t) =>
+      if self.big {
+        self.uint(t.seconds.reinterpret_as_uint64(), 8)
+        self.uint(t.fractions, 8)
+      } else {
+        self.uint(t.fractions, 8)
+        self.uint(t.seconds.reinterpret_as_uint64(), 8)
+      }
   }
 }
 

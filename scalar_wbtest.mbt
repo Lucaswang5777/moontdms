@@ -27,3 +27,13 @@ test "property scalar exactness on both endians" {
     }
   }
 }
+
+///|
+test "big endian timestamp reverses component order as a 128-bit structure" {
+  let b = decode_hex("ffffffffffffffff0000000000000005")
+  let r = Reader::new(b, 0, 16, true, Limits::default())
+  assert_eq(r.scalar(Time), Instant({ seconds: -1L, fractions: 5UL, }))
+  let w = Writer::new(true, Limits::default())
+  w.scalar(Time, Instant({ seconds: -1L, fractions: 5UL, }))
+  assert_eq(w.finish(), b)
+}
