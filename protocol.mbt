@@ -165,7 +165,7 @@ fn document_from_json(j : Json, limits : Limits) -> Document raise TdmsError {
     let path = parse_path(json_text(json_field(o, "path")))
     let kind = match json_optional(o, "type") {
       Some(Null) | None => None
-      Some(v) => Some(data_type(json_integer(v).to_uint()))
+      Some(v) => Some(data_type(json_integer(v).reinterpret_as_uint()))
     }
     let values_json = match json_optional(o, "values") {
       Some(v) => json_array(v)
@@ -193,7 +193,9 @@ fn document_from_json(j : Json, limits : Limits) -> Document raise TdmsError {
     let properties : Array[Property] = []
     for p in properties_json {
       let name = json_text(json_field(p, "name"))
-      let k = data_type(json_integer(json_field(p, "type")).to_uint())
+      let k = data_type(
+        json_integer(json_field(p, "type")).reinterpret_as_uint(),
+      )
       properties.push({
         name,
         kind: k,

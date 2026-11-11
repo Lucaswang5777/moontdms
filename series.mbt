@@ -20,7 +20,7 @@ pub fn write_segments(
     for obj in part.objects {
       let key = obj.path.text()
       paths[key] = true
-      if paths.size() > limits.max_objects {
+      if paths.length() > limits.max_objects {
         raise Budget("objects across segments")
       }
       if obj.values.length() > limits.max_samples - samples {

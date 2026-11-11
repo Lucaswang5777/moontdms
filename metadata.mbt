@@ -67,7 +67,8 @@ fn read_index(r : Reader, length : UInt32) -> RawIndex raise TdmsError {
       checked_product(count, width, r.limits.max_bytes)
     }
     None => {
-      demand(length == 28U, "invalid string raw index length")
+      // npTDMS 1.10.0 emits marker 20 for strings but includes the size field.
+      demand(length == 28U || length == 20U, "invalid string raw index length")
       let n = r.bounded(8, r.limits.max_bytes, "string chunk bytes")
       let offsets = checked_product(count, 4, r.limits.max_bytes)
       demand(n >= offsets, "string chunk smaller than offsets")
