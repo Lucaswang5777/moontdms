@@ -3,3 +3,4 @@ _build/
 *.zip
 *.tdms
 __pycache__/
+!fixtures/daqmx/*.tdms

@@ -1,13 +1,13 @@
 # MoonTDMS
 
-纯 MoonBit 的 TDMS 2.0 测量数据交换库，模块 `Lucaswang5777/moontdms@0.1.0`。它把内存中的 TDMS 字节转换成有类型的对象、属性和通道，供采集接入、实验室数据整理和报表系统复用。核心库只依赖 MoonBit core，不依赖 Python、NI 运行时或本机动态库。
+纯 MoonBit 的 TDMS 2.0 测量数据交换库，模块 `Lucaswang5777/moontdms@0.2.0`。它把内存中的 TDMS 字节转换成有类型的对象、属性和通道，供采集接入、实验室数据整理和报表系统复用。核心库只依赖 MoonBit core，不依赖 Python、NI 运行时或本机动态库。
 
 ## 已实现范围
 
 - 读取版本 4713 的 TDMS 2.0 lead-in、对象路径、属性、原始索引和多段数据；检查偏移与数据边界。
 - 属性覆盖、缓存索引复用、数据参与状态切换、无元数据追加段、完整重复 chunk、新对象列表和重排。
 - 连续与交错布局、大小端；交错布局支持混合宽度但要求各通道等长，字符串只能连续存储。
-- I8/I16/I32/I64、U8/U16/U32/U64、F32/F64、Boolean、UTF-8 字符串和 TDMS 时间戳。带单位的单/双精度类型码映射为 F32/F64；保留对象属性，不执行缩放。
+- I8/I16/I32/I64、U8/U16/U32/U64、F32/F64、Boolean、UTF-8 字符串和 TDMS 时间戳。带单位的单/双精度类型码映射为 F32/F64；保留对象属性。DAQmx 缩放通过显式物理量接口解释，见下文。
 - 写出规范完整元数据段和多段文件，支持交错写出；选取/裁剪通道并重写文件。
 - 波形相对时间轴、有限数值摘要、长表 CSV、版本化 JSON 协议与命令入口。
 - 输入/输出字节、段、对象、属性记录、单字符串 UTF-8 字节、累计样本数预算；错误分为 `Invalid`、`Unsupported`、`Budget`。
@@ -21,7 +21,7 @@
 在新 MoonBit 模块中固定版本：
 
 ```sh
-moon add Lucaswang5777/moontdms@0.1.0
+moon add Lucaswang5777/moontdms@0.2.0
 ```
 
 在消费者 `moon.pkg` 中导入：
@@ -91,6 +91,23 @@ I64/U64 与时间戳原字段始终保留整数精度。时间戳为 1904-01-01 
 
 `DataObject` / `Document` 含可变数组，调用方须避免并发修改正在处理的数据。`select` 的路径、属性与样本数组复制；值自身不可变。
 
+## DAQmx 原始采样、物理量与裁剪
+
+0.2.0 新增 `read_acquisition(bytes)`，把元数据/普通通道放在 `Acquisition.metadata`，把 DAQmx 每路精确原始流放在 `daqmx[].scalers`，不把 ADC counts 当成 V。`raw_channel(path)` 可按通道查询。`native_type` 区分 typed DAQmx 与 format-changing raw。
+
+- `a.physical()` 按通道→组→文件的 NI 属性查找缩放图，输出有单位的普通 `Document`；实现 Linear、Polynomial、Table、Add、Subtract、AdvancedAPI 和原始 scaler 节点。`NI_Scaling_Status=scaled` 避免重复换算，规范化输出也标记继承缩放已执行。NI Subtract 为 right−left；Table 按 scaled values 到 pre-scaled values 插值。
+- `a.select(paths, start=1, end=3).write()` 同步裁剪各 scaler，保存精确整数、scale id、NI 属性，并按 `wf_increment` 更新 `wf_start_offset`；重写采用 byte-aligned DAQmx 索引，重新组织段与缓冲，不保证原文件逐字节相同。digital bit 解包为 0/1 后规范化写出。
+- `write(a.physical())` 则生成普通物理值 TDMS；原始 counts 仍在原 `Acquisition`。未知传感器缩放可通过 raw 接口保留和裁剪，但 `physical` 明确报 Unsupported。
+- `read(bytes)` 对 DAQmx 调用物理量解释；普通通道保留已有 raw 语义。需要解释普通通道缩放时同样显式调用 `read_acquisition(bytes).physical()`。
+
+独立合成文件 [voltage.tdms](fixtures/daqmx/voltage.tdms) 包含 I16 counts `[-100,0,100,200]`、斜率 0.25、截距 1.5、单位 V、间隔 0.01、起点 0.5；物理量为 `[-23.5,1.5,26.5,51.5]` V。裁剪 `[1,3)` 后保存 counts `[0,100]` 与完整缩放属性，外部读取器读得 `[1.5,26.5]` V，起点 0.51。公共 API 演示嵌入同一文件的字节，无需宿主文件系统：
+
+```sh
+moon run examples/daqmx --target js --deny-warn
+```
+
+详见 [完整操作流程](docs/daqmx-workflow.md) 和 [格式覆盖矩阵](docs/format-coverage.md)。缩放图最多 128 节点，有向图环、缺参数、越界输入返回错误；中间数组累计计入样本预算。Double 物理量可能舍入超过 2^53 的原始整数，raw 接口保留精确值。
+
 ## JSON 协议和 CLI
 
 ```sh
@@ -104,6 +121,9 @@ POSIX shell 示例；PowerShell 建议由脚本通过参数数组传递 JSON，�
 | --- | --- | --- |
 | encode | objects，可选 big_endian/interleaved | hex |
 | decode | hex | objects |
+| raw | hex | objects、daqmx scaler 流 |
+| physical | hex | objects、普通物理值 hex |
+| crop_raw | hex、paths，可选 start/end/big_endian | 保留原始采样与缩放的 hex |
 | inspect | hex | segments |
 | select | hex、paths，可选 start/end | hex |
 | csv | hex，可选 waveform_time | csv |
@@ -116,7 +136,7 @@ POSIX shell 示例；PowerShell 建议由脚本通过参数数组传递 JSON，�
 
 `max_bytes` 约束单次输入或生成的输出字节，不是进程峰值内存保证。数组、JSON、临时缓冲与复制会额外分配；JSON 的请求上限按 UTF-16 code units 检查，hex 与 JSON 响应会膨胀。生产宿主仍须设置请求/并发限制。未提供性能或覆盖率百分比承诺。
 
-明确不支持 TDMS 1.0（4712）、DAQmx 原始块与缩放、扩展/复数浮点、XML TDM、索引 sidecar、NI 隐式缩放、硬件驱动、尾部不完整 chunk 恢复、unfinished segment sentinel、跨段改变同一通道类型或端序、`name` 属性触发的对象重命名。这些输入返回错误。读取兼容 npTDMS 1.10.0 的字符串长度标记 20，但仍读取并校验其 8 字节总大小；自身字符串索引写出标记 28。
+当前尚未达到完整 TDMS 2.0 兼容；完整目标、逐项证据和差距见 [格式覆盖矩阵](docs/format-coverage.md)。明确不支持 TDMS 1.0（4712）、RTD/应变/热敏电阻/热电偶传感器换算、非零 DAQmx sample-format bitmap、扩展/复数浮点、XML TDM、索引 sidecar、缩放属性在已有样本后变化、硬件驱动、尾部不完整 chunk 恢复、unfinished segment sentinel、跨段改变同一通道类型或端序、`name` 属性触发的对象重命名。这些输入返回错误。读取兼容 npTDMS 1.10.0 的字符串长度标记 20，但仍读取并校验其 8 字节总大小；自身字符串索引写出标记 28。
 
 CSV 为数据交换文本，不执行电子表格公式转义；不可信数据导入电子表格时由宿主采用文本列策略。
 
@@ -130,13 +150,14 @@ moon test --target js --deny-warn
 moon build --target js --deny-warn
 python -m pip install numpy==2.3.5 npTDMS==1.10.0
 python scripts/differential.py
+python scripts/daqmx_differential.py
 python scripts/cli_smoke.py
 python scripts/audit.py
 ```
 
-将 target 分别替换为 wasm-gc、wasm、js、native 进行四后端验证。当前 32 个 MoonBit 测试块含标量边界、大小端、Unicode、重复 chunk、属性覆盖、对象重排、失效后恢复索引、全部前缀截断、预算与恶意偏移/类型/布尔/字符串检查。82 个独立 Python 差分样本使用 `struct` 自建字节和 npTDMS 1.10.0 写出数据，双向核对通道值和属性。npTDMS/numpy 仅为开发测试依赖。
+将 target 分别替换为 wasm-gc、wasm、js、native 进行四后端验证。当前 40 个 MoonBit 测试块含标量边界、大小端、Unicode、重复 chunk、属性覆盖、对象重排、失效后恢复索引、全部前缀截断、预算与恶意偏移/类型/布尔/字符串检查。82 个普通格式独立 Python 差分场景和 99 个 DAQmx 验证场景（包含原始值、物理量、裁剪和拒绝路径）使用 `struct` 自建字节和 npTDMS 1.10.0 写出数据，双向核对通道值和属性。npTDMS/numpy 仅为开发测试依赖。
 
-[CI](https://github.com/Lucaswang5777/moontdms/actions) 会运行四后端和三个工作流；实际状态以对应提交的绿色运行记录为准。[查重与选题记录](docs/competition/duplicate-check.md) 说明检索范围与邻近项目边界，不代表生态绝对唯一。
+[CI](https://github.com/Lucaswang5777/moontdms/actions) 会运行四后端和四个工作流；实际状态以对应提交的绿色运行记录为准。[查重与选题记录](docs/competition/duplicate-check.md) 说明检索范围与邻近项目边界，不代表生态绝对唯一。
 
 ## 许可与参考
 

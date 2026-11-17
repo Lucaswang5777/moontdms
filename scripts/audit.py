@@ -21,13 +21,13 @@ def main():
         files = git('diff-tree','--root','--no-commit-id','--name-only','-r',sha).splitlines()
         implementation = [f for f in files if f.endswith('.mbt') and 'test' not in f and not f.startswith(('cmd/','examples/'))]
         test = [f for f in files if f.endswith('_test.mbt') or f.endswith('_wbtest.mbt')]
-        independent_validation = any(f in files for f in ('scripts/differential.py','scripts/cli_smoke.py'))
+        independent_validation = any(f in files for f in ('scripts/differential.py','scripts/cli_smoke.py','scripts/daqmx_differential.py'))
         downstream = any(f.startswith('examples/') and f.endswith('.mbt') for f in files)
         if implementation or test or independent_validation or downstream:
             meaningful.append({'sha':sha,'purpose':git('show','-s','--format=%s',sha),'files':files})
     assert len(meaningful) >= 20, len(meaningful)
     manifest = (ROOT/'moon.mod').read_text(encoding='utf-8')
-    assert 'Lucaswang5777/moontdms' in manifest and '0.1.0' in manifest
+    assert 'Lucaswang5777/moontdms' in manifest and '0.2.0' in manifest
     print(json.dumps({'production_inventory':inventory,'substantive_lines':total,
                       'physical_production_lines':sum(r['physical'] for r in inventory),
                       'conservative_engineering_commits':len(meaningful), 'commits':meaningful}, indent=2))

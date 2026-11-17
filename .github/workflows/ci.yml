@@ -41,6 +41,7 @@ jobs:
           moon run examples/ingest --deny-warn --target ${{ matrix.target }}
           moon run examples/crop --deny-warn --target ${{ matrix.target }}
           moon run examples/report --deny-warn --target ${{ matrix.target }}
+          moon run examples/daqmx --deny-warn --target ${{ matrix.target }}
       - uses: actions/setup-python@v5
         if: matrix.target == 'js'
         with:
@@ -50,5 +51,6 @@ jobs:
         run: |
           python -m pip install numpy==2.3.5 npTDMS==1.10.0
           python scripts/differential.py --no-build
+          python scripts/daqmx_differential.py
           python scripts/cli_smoke.py
           python scripts/audit.py
