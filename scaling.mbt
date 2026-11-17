@@ -253,6 +253,7 @@ fn compute_scales(
     None => obj.values
   }
   let cache : Array[Array[Value]?] = Array::make(plan.length(), None)
+  let kinds : Array[DataType?] = Array::make(plan.length(), None)
   let mut remaining = plan.length()
   let mut allocated = 0
   while remaining > 0 {
@@ -333,31 +334,29 @@ fn compute_scales(
         "scale graph intermediate sample budget",
       )
       allocated += values.length()
+      kinds[i] = match op {
+        Scaler(id) =>
+          Some(
+            daq.unwrap().scalers.iter().find_first(s => s.id == id).unwrap().kind,
+          )
+        Pass(id) =>
+          if id == 0xffffffffU {
+            match daq {
+              Some(d) => d.native_type
+              None => obj.kind
+            }
+          } else {
+            kinds[id.reinterpret_as_int()]
+          }
+        _ => Some(F64)
+      }
       cache[i] = Some(values)
       remaining -= 1
     }
     demand(remaining < before, "cyclic scale graph")
   }
   let values = cache[plan.length() - 1].unwrap().map(v => v)
-  let kind = match plan[plan.length() - 1] {
-    Scaler(id) =>
-      Some(
-        daq.unwrap().scalers.iter().find_first(s => s.id == id).unwrap().kind,
-      )
-    Pass(_) =>
-      if values.is_empty() {
-        obj.kind
-      } else {
-        match values[0] {
-          Signed(_) => Some(I64)
-          Unsigned(_) => Some(U64)
-          Real(_) => Some(F64)
-          Instant(_) => Some(Time)
-          _ => obj.kind
-        }
-      }
-    _ => Some(F64)
-  }
+  let kind = kinds[plan.length() - 1]
   (kind, values)
 }
 
@@ -396,6 +395,15 @@ pub fn Acquisition::physical(
           value: Textual("scaled"),
         })
       }
+    }
+    // Normalized values must not fall back to a group/file scale in readers.
+    if obj.path.parts.length() < 2 &&
+      obj.property("NI_Number_Of_Scales") is Some(_) {
+      set_property(copy, {
+        name: "NI_Scaling_Status",
+        kind: Text,
+        value: Textual("scaled"),
+      })
     }
     result.objects.push(copy)
   }

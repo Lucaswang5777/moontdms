@@ -195,12 +195,13 @@ fn read_daq_raw(
     chunk_bytes += n
   }
   let size = seg.end_offset - seg.raw_offset
-  if chunk_bytes == 0 {
+  let chunks = if chunk_bytes == 0 {
     demand(size == 0, "DAQmx bytes without samples")
-    return
+    0
+  } else {
+    demand(size % chunk_bytes == 0, "incomplete DAQmx raw chunk")
+    size / chunk_bytes
   }
-  demand(size % chunk_bytes == 0, "incomplete DAQmx raw chunk")
-  let chunks = size / chunk_bytes
   for (i, idx) in channels {
     let layout = idx.daq.unwrap()
     let path = state.doc.objects[i].path

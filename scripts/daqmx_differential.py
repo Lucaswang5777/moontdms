@@ -124,6 +124,36 @@ def main():
     typed=fixture([('v',[(5,0,0,0)],{'NI_Number_Of_Scales':1,'NI_Scale[0]_Scale_Type':'Linear','NI_Scale[0]_Linear_Slope':2.0,'NI_Scale[0]_Linear_Y_Intercept':1.0},3)],[struct.pack('<iiii',1,2,3,4)],[4])
     normal=call('physical',typed)
     np.testing.assert_allclose([o['values'] for o in normal['objects'] if o['path']=="/'acq'/'v'"][0],ref(typed)['acq']['v'][:]);cases+=1
+
+    # Every numeric DAQmx type code, with exact raw check and both endian outputs.
+    for big in [False,True]:
+        e='>' if big else '<'
+        for typ,fmt,values in [(0,'B',[0,1,2,255]),(1,'b',[-128,-1,0,127]),(2,'H',[0,1,2,65535]),(3,'h',[-32768,-1,0,32767]),(4,'I',[0,1,2,2**32-1]),(5,'i',[-2**31,-1,0,2**31-1]),(6,'Q',[0,1,2,2**64-1]),(7,'q',[-2**63,-1,0,2**63-1]),(8,'f',[-2.5,0.0,1.25,100.0]),(9,'d',[-2.5,0.0,1.25,100.0])]:
+            sample=fixture([('scalar',[(typ,0,0,0)],linear())],[struct.pack(e+fmt*4,*values)],[struct.calcsize(fmt)],big=big)
+            validate(sample);crop(sample,big);cases+=2
+    # Group and file scaling inheritance, then raw index reuse in a metadata-free segment.
+    for path in ["/", "/'acq'"]:
+        raw=struct.pack('<hhhh',-100,0,100,200)
+        base=fixture([('voltage',[(3,0,0,0)],{})],[raw],[2])
+        meta=struct.pack('<I',1)+text(path,'<')+struct.pack('<I',0xffffffff)+props(linear(),'<')
+        inherited=segment(meta,b'',toc=6)+base
+        validate(inherited);crop(inherited);cases+=2
+    # No new metadata: prior scaler index is reused, all eight samples remain scaled.
+    base=fixture([('voltage',[(3,0,0,0)],linear())],[struct.pack('<hhhh',1,2,3,4)],[2])
+    appended=base+segment(b'',struct.pack('<hhhh',5,6,7,8),toc=136)
+    validate(appended);cases+=1
+    # Scaling cannot retroactively change samples from earlier segments.
+    meta=struct.pack('<I',1)+text("/'acq'/'voltage'",'<')+struct.pack('<I',0xffffffff)+props({'NI_Scale[1]_Linear_Slope':2.0},'<')
+    reject('raw',base+segment(meta,b'',toc=2));cases+=1
+    # NI-documented alternate digital marker is read, canonical writer uses 1269.
+    digital=fixture([('line',[(0,0,0,0)],{'NI_Number_Of_Scales':1})],[bytes([0,1,1,0])],[1],digital=True)
+    alternate=digital.replace(struct.pack('<I',0x126a),struct.pack('<I',0x1369),1)
+    assert call('raw',alternate)['daqmx'][0]['scalers'][0]['values']==['0','1','1','0'];cases+=1
+    # An unknown scale remains exactly preserved by raw crop/write, even though
+    # physical interpretation is explicitly unavailable.
+    unknown=fixture([('v',[(3,0,0,0)],{'NI_Number_Of_Scales':2,'NI_Scale[1]_Scale_Type':'Thermocouple'})],[struct.pack('<hhhh',1,2,3,4)],[2])
+    kept=bytes.fromhex(call('crop_raw',unknown,paths=["/'acq'/'v'"],start=1,end=3)['hex'])
+    assert call('raw',kept)['daqmx'][0]['scalers'][0]['values']==['2','3'];reject('physical',kept);cases+=1
     # Unknown and malformed scale graphs fail explicitly, raw inspection remains available.
     for ps in [
         {'NI_Number_Of_Scales':2,'NI_Scale[1]_Scale_Type':'Thermocouple'},
