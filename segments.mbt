@@ -25,9 +25,6 @@ fn segment_header(
   if (toc & 0xffffff11U) != 0U {
     raise Unsupported("unknown table-of-contents flags")
   }
-  if flag(toc, 128U) {
-    raise Unsupported("DAQmx raw data")
-  }
   let big = flag(toc, 64U)
   let r = Reader::new(bytes, pos + 8, pos + 28, big, limits)
   let version = r.u32()

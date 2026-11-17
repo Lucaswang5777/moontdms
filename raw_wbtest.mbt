@@ -13,6 +13,6 @@ test "string chunks use cumulative end offsets and UTF-8 byte lengths" {
   let b = w.finish()
   let r = Reader::new(b, 0, b.length(), false, Limits::default())
   let out : Array[Value] = []
-  read_strings(r, { kind: Text, count: 2, size: 11, }, out)
+  read_strings(r, { kind: Text, count: 2, size: 11, daq: None, }, out)
   assert_eq(out, [Textual("a"), Textual("bc")])
 }

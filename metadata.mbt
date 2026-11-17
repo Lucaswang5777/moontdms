@@ -3,11 +3,13 @@ priv struct RawIndex {
   kind : DataType
   count : Int32
   size : Int32
+  daq : DaqIndex?
 }
 
 ///|
 priv struct ReadState {
   doc : Document
+  daqmx : Array[DaqChannel?]
   by_path : Map[String, Int32]
   cache : Array[RawIndex?]
   enabled : Array[Bool]
@@ -21,6 +23,7 @@ priv struct ReadState {
 fn ReadState::new() -> ReadState {
   {
     doc: Document::new(),
+    daqmx: [],
     by_path: Map([]),
     cache: [],
     enabled: [],
@@ -47,6 +50,7 @@ fn ReadState::object(
   let i = self.doc.objects.length()
   self.doc.objects.push(DataObject::new(path))
   self.by_path[key] = i
+  self.daqmx.push(None)
   self.cache.push(None)
   self.enabled.push(false)
   self.endian.push(None)
@@ -55,8 +59,8 @@ fn ReadState::object(
 
 ///|
 fn read_index(r : Reader, length : UInt32) -> RawIndex raise TdmsError {
-  if length == 0x1269U || length == 0x126aU {
-    raise Unsupported("DAQmx raw index")
+  if length == 0x1269U || length == 0x126aU || length == 0x1369U {
+    return read_daq_index(r, length)
   }
   let kind = data_type(r.u32())
   demand(r.u32() == 1U, "TDMS array dimension must be one")
@@ -75,7 +79,7 @@ fn read_index(r : Reader, length : UInt32) -> RawIndex raise TdmsError {
       n
     }
   }
-  { kind, count, size, }
+  { kind, count, size, daq: None, }
 }
 
 ///|
@@ -127,7 +131,13 @@ fn read_metadata(
         obj.kind is None || obj.kind == Some(idx.kind),
         "channel data type changed",
       )
-      obj.kind = Some(idx.kind)
+      if state.cache[i] is Some(previous) {
+        demand(
+          (previous.daq is Some(_)) == (idx.daq is Some(_)),
+          "channel raw representation changed",
+        )
+      }
+      obj.kind = if idx.daq is Some(_) { None } else { Some(idx.kind) }
       state.cache[i] = Some(idx)
       state.enabled[i] = true
     }
@@ -144,7 +154,29 @@ fn read_metadata(
       if p.name == "name" {
         raise Unsupported("TDMS name-based object renaming")
       }
-      set_property(state.doc.objects[i], p)
+      let obj = state.doc.objects[i]
+      if (
+          p.name.has_prefix("NI_Scale[") ||
+          p.name == "NI_Number_Of_Scales" ||
+          p.name == "NI_Scaling_Status"
+        ) &&
+        obj.property(p.name) != Some(p.value) {
+        for j = 0; j < state.doc.objects.length(); j = j + 1 {
+          let channel = state.doc.objects[j]
+          let affected = path.parts.is_empty() ||
+            channel.path == path ||
+            (
+              path.parts.length() == 1 &&
+              channel.path.parts.length() == 2 &&
+              channel.path.parts[0] == path.parts[0]
+            )
+          if affected &&
+            (!channel.values.is_empty() || state.daqmx[j] is Some(_)) {
+            raise Unsupported("scaling metadata changes after samples")
+          }
+        }
+      }
+      set_property(obj, p)
     }
   }
   demand(r.pos == r.end, "unconsumed metadata bytes")

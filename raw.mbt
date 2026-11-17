@@ -106,11 +106,10 @@ pub fn read(
   bytes : Bytes,
   limits~ : Limits = Limits::default(),
 ) -> Document raise TdmsError {
-  let segments = inspect(bytes, limits~)
-  let state = ReadState::new()
-  for seg in segments {
-    read_metadata(bytes, seg, state, limits)
-    read_contiguous(bytes, seg, state, limits)
+  let acquisition = read_acquisition(bytes, limits~)
+  if acquisition.daqmx.is_empty() {
+    acquisition.metadata
+  } else {
+    acquisition.physical(limits~)
   }
-  state.doc
 }

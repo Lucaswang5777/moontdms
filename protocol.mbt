@@ -248,7 +248,59 @@ pub fn process_json(
     Json::object({ "hex": Json::string(encode_hex(bytes)) })
   } else {
     let bytes = decode_hex(json_text(json_field(request, "hex")), limits~)
-    if op == "inspect" {
+    if op == "raw" || op == "crop_raw" || op == "physical" {
+      let acquisition = read_acquisition(bytes, limits~)
+      if op == "raw" {
+        Json::object({
+          "objects": document_to_json(acquisition.metadata),
+          "daqmx": Json::array(
+            acquisition.daqmx.map(c => {
+              Json::object({
+                "path": Json::string(c.path.text()),
+                "scalers": Json::array(
+                  c.scalers.map(s => {
+                    Json::object({
+                      "id": Json::number(s.id.to_double()),
+                      "type": Json::number(s.kind.code().to_double()),
+                      "values": Json::array(s.values.map(value_to_json)),
+                    })
+                  }),
+                ),
+              })
+            }),
+          ),
+        })
+      } else if op == "physical" {
+        let doc = acquisition.physical(limits~)
+        Json::object({
+          "objects": document_to_json(doc),
+          "hex": Json::string(encode_hex(write(doc, limits~))),
+        })
+      } else {
+        let paths = json_array(json_field(request, "paths")).map(p => {
+          parse_path(json_text(p))
+        })
+        let start = match json_optional(request, "start") {
+          Some(v) => json_integer(v)
+          None => 0
+        }
+        let end = match json_optional(request, "end") {
+          Some(v) => Some(json_integer(v))
+          None => None
+        }
+        let selected = acquisition.select(paths, start~, end?, limits~)
+        Json::object({
+          "hex": Json::string(
+            encode_hex(
+              selected.write(
+                big_endian=optional_bool(request, "big_endian"),
+                limits~,
+              ),
+            ),
+          ),
+        })
+      }
+    } else if op == "inspect" {
       let segments = inspect(bytes, limits~).map(s => {
         Json::object({
           "offset": Json::number(s.offset.to_double()),

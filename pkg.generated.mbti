@@ -20,6 +20,8 @@ pub fn process_json(String, limits? : Limits) -> String raise TdmsError
 
 pub fn read(Bytes, limits? : Limits) -> Document raise TdmsError
 
+pub fn read_acquisition(Bytes, limits? : Limits) -> Acquisition raise TdmsError
+
 pub fn write(Document, big_endian? : Bool, limits? : Limits) -> Bytes raise TdmsError
 
 pub fn write_interleaved(Document, big_endian? : Bool, limits? : Limits) -> Bytes raise TdmsError
@@ -35,6 +37,27 @@ pub suberror TdmsError {
 pub fn TdmsError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+pub(all) struct Acquisition {
+  metadata : Document
+  daqmx : Array[DaqChannel]
+} derive(Eq, @debug.Debug)
+pub fn Acquisition::equal(Self, Self) -> Bool
+pub fn Acquisition::not_equal(Self, Self) -> Bool
+pub fn Acquisition::physical(Self, limits? : Limits) -> Document raise TdmsError
+pub fn Acquisition::raw_channel(Self, ObjectPath) -> DaqChannel?
+pub fn Acquisition::select(Self, Array[ObjectPath], start? : Int32, end? : Int32, limits? : Limits) -> Self raise TdmsError
+pub fn Acquisition::to_repr(Self) -> @debug.Repr
+pub fn Acquisition::write(Self, big_endian? : Bool, limits? : Limits) -> Bytes raise TdmsError
+
+pub(all) struct DaqChannel {
+  path : ObjectPath
+  scalers : Array[ScalerData]
+  native_type : DataType?
+} derive(Eq, @debug.Debug)
+pub fn DaqChannel::equal(Self, Self) -> Bool
+pub fn DaqChannel::not_equal(Self, Self) -> Bool
+pub fn DaqChannel::to_repr(Self) -> @debug.Repr
+
 pub(all) struct DataObject {
   path : ObjectPath
   properties : Array[Property]
@@ -114,6 +137,15 @@ pub(all) struct Property {
 pub fn Property::equal(Self, Self) -> Bool
 pub fn Property::not_equal(Self, Self) -> Bool
 pub fn Property::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ScalerData {
+  id : UInt32
+  kind : DataType
+  values : Array[Value]
+} derive(Eq, @debug.Debug)
+pub fn ScalerData::equal(Self, Self) -> Bool
+pub fn ScalerData::not_equal(Self, Self) -> Bool
+pub fn ScalerData::to_repr(Self) -> @debug.Repr
 
 pub(all) struct SegmentInfo {
   offset : Int32
