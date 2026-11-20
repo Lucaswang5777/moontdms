@@ -1,5 +1,10 @@
 # 变更记录
 
+## 0.2.1
+
+- 明确完整 TDMS 2.0 是项目目标而非当前兼容声明；发布范围以格式覆盖矩阵的已验证子集为准。
+- 说明并锁定跨段缩放属性变更语义：已有 DAQmx 样本后再改缩放属性时拒绝整个 Acquisition，不追溯解释此前原始值；新增申报书和回归说明。
+
 ## 0.2.0
 
 - 新增 DAQmx analog/digital raw scaler、typed channel、多 buffer/重复 chunk 解码及精确原始采样 API。

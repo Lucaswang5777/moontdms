@@ -142,7 +142,8 @@ def main():
     base=fixture([('voltage',[(3,0,0,0)],linear())],[struct.pack('<hhhh',1,2,3,4)],[2])
     appended=base+segment(b'',struct.pack('<hhhh',5,6,7,8),toc=136)
     validate(appended);cases+=1
-    # Scaling cannot retroactively change samples from earlier segments.
+    # A later segment that changes scaling after samples exist is rejected;
+    # the new scale must never be applied retroactively to earlier counts.
     meta=struct.pack('<I',1)+text("/'acq'/'voltage'",'<')+struct.pack('<I',0xffffffff)+props({'NI_Scale[1]_Linear_Slope':2.0},'<')
     reject('raw',base+segment(meta,b'',toc=2));cases+=1
     # NI-documented alternate digital marker is read, canonical writer uses 1269.

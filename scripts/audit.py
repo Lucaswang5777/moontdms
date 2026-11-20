@@ -27,7 +27,7 @@ def main():
             meaningful.append({'sha':sha,'purpose':git('show','-s','--format=%s',sha),'files':files})
     assert len(meaningful) >= 20, len(meaningful)
     manifest = (ROOT/'moon.mod').read_text(encoding='utf-8')
-    assert 'Lucaswang5777/moontdms' in manifest and '0.2.0' in manifest
+    assert 'Lucaswang5777/moontdms' in manifest and '0.2.1' in manifest
     print(json.dumps({'production_inventory':inventory,'substantive_lines':total,
                       'physical_production_lines':sum(r['physical'] for r in inventory),
                       'conservative_engineering_commits':len(meaningful), 'commits':meaningful}, indent=2))

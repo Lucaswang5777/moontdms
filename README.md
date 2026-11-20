@@ -1,6 +1,6 @@
 # MoonTDMS
 
-纯 MoonBit 的 TDMS 2.0 测量数据交换库，模块 `Lucaswang5777/moontdms@0.2.0`。它把内存中的 TDMS 字节转换成有类型的对象、属性和通道，供采集接入、实验室数据整理和报表系统复用。核心库只依赖 MoonBit core，不依赖 Python、NI 运行时或本机动态库。
+纯 MoonBit 的 TDMS 2.0 测量数据交换库，模块 `Lucaswang5777/moontdms@0.2.1`。它把内存中的 TDMS 字节转换成有类型的对象、属性和通道，供采集接入、实验室数据整理和报表系统复用。核心库只依赖 MoonBit core，不依赖 Python、NI 运行时或本机动态库。
 
 ## 已实现范围
 
@@ -21,7 +21,7 @@
 在新 MoonBit 模块中固定版本：
 
 ```sh
-moon add Lucaswang5777/moontdms@0.2.0
+moon add Lucaswang5777/moontdms@0.2.1
 ```
 
 在消费者 `moon.pkg` 中导入：
@@ -93,7 +93,7 @@ I64/U64 与时间戳原字段始终保留整数精度。时间戳为 1904-01-01 
 
 ## DAQmx 原始采样、物理量与裁剪
 
-0.2.0 新增 `read_acquisition(bytes)`，把元数据/普通通道放在 `Acquisition.metadata`，把 DAQmx 每路精确原始流放在 `daqmx[].scalers`，不把 ADC counts 当成 V。`raw_channel(path)` 可按通道查询。`native_type` 区分 typed DAQmx 与 format-changing raw。
+0.2.0 起提供 `read_acquisition(bytes)`，把元数据/普通通道放在 `Acquisition.metadata`，把 DAQmx 每路精确原始流放在 `daqmx[].scalers`，不把 ADC counts 当成 V。`raw_channel(path)` 可按通道查询。`native_type` 区分 typed DAQmx 与 format-changing raw。
 
 - `a.physical()` 按通道→组→文件的 NI 属性查找缩放图，输出有单位的普通 `Document`；实现 Linear、Polynomial、Table、Add、Subtract、AdvancedAPI 和原始 scaler 节点。`NI_Scaling_Status=scaled` 避免重复换算，规范化输出也标记继承缩放已执行。NI Subtract 为 right−left；Table 按 scaled values 到 pre-scaled values 插值。
 - `a.select(paths, start=1, end=3).write()` 同步裁剪各 scaler，保存精确整数、scale id、NI 属性，并按 `wf_increment` 更新 `wf_start_offset`；重写采用 byte-aligned DAQmx 索引，重新组织段与缓冲，不保证原文件逐字节相同。digital bit 解包为 0/1 后规范化写出。
@@ -136,7 +136,7 @@ POSIX shell 示例；PowerShell 建议由脚本通过参数数组传递 JSON，�
 
 `max_bytes` 约束单次输入或生成的输出字节，不是进程峰值内存保证。数组、JSON、临时缓冲与复制会额外分配；JSON 的请求上限按 UTF-16 code units 检查，hex 与 JSON 响应会膨胀。生产宿主仍须设置请求/并发限制。未提供性能或覆盖率百分比承诺。
 
-当前尚未达到完整 TDMS 2.0 兼容；完整目标、逐项证据和差距见 [格式覆盖矩阵](docs/format-coverage.md)。明确不支持 TDMS 1.0（4712）、RTD/应变/热敏电阻/热电偶传感器换算、非零 DAQmx sample-format bitmap、扩展/复数浮点、XML TDM、索引 sidecar、缩放属性在已有样本后变化、硬件驱动、尾部不完整 chunk 恢复、unfinished segment sentinel、跨段改变同一通道类型或端序、`name` 属性触发的对象重命名。这些输入返回错误。读取兼容 npTDMS 1.10.0 的字符串长度标记 20，但仍读取并校验其 8 字节总大小；自身字符串索引写出标记 28。
+当前尚未达到完整 TDMS 2.0 兼容；标准全量支持是目标，不是本版本声明。申报范围以 [格式覆盖矩阵](docs/format-coverage.md) 所列的已验证子集为准。明确不支持 TDMS 1.0（4712）、RTD/应变/热敏电阻/热电偶传感器换算、非零 DAQmx sample-format bitmap、扩展/复数浮点、XML TDM、索引 sidecar、硬件驱动、尾部不完整 chunk 恢复、unfinished segment sentinel、跨段改变同一通道类型或端序、`name` 属性触发的对象重命名。这些输入返回错误。若同一 DAQmx 通道已有采样，而后续段修改 `NI_Scale[...]` 属性，`read_acquisition` 拒绝整个文件，不返回部分数据，也不把新缩放追溯用于旧 counts；详情与回归场景见格式覆盖矩阵。读取兼容 npTDMS 1.10.0 的字符串长度标记 20，但仍读取并校验其 8 字节总大小；自身字符串索引写出标记 28。
 
 CSV 为数据交换文本，不执行电子表格公式转义；不可信数据导入电子表格时由宿主采用文本列策略。
 
