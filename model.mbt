@@ -1,9 +1,10 @@
 ///|
+#derive(Debug)
 pub suberror TdmsError {
   Invalid(String)
   Unsupported(String)
   Budget(String)
-} derive(Debug)
+}
 
 ///|
 fn demand(ok : Bool, message : String) -> Unit raise TdmsError {
@@ -13,6 +14,7 @@ fn demand(ok : Bool, message : String) -> Unit raise TdmsError {
 }
 
 ///|
+#derive(Eq, Debug)
 pub(all) enum DataType {
   I8
   I16
@@ -27,15 +29,17 @@ pub(all) enum DataType {
   Text
   Boolean
   Time
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct Timestamp {
   seconds : Int64
   fractions : UInt64
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) enum Value {
   Signed(Int64)
   Unsigned(UInt64)
@@ -43,16 +47,18 @@ pub(all) enum Value {
   Textual(String)
   Logical(Bool)
   Instant(Timestamp)
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct Property {
   name : String
   kind : DataType
   value : Value
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct Limits {
   max_bytes : Int32
   max_segments : Int32
@@ -60,7 +66,7 @@ pub(all) struct Limits {
   max_properties : Int32
   max_string_bytes : Int32
   max_samples : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn Limits::default() -> Limits {

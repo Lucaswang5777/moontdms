@@ -1,10 +1,21 @@
 """Conservative source inventory and independent implementation history audit."""
 from pathlib import Path
-import json, subprocess
+import json, subprocess, tomllib
 ROOT = Path(__file__).resolve().parents[1]
 
 def git(*args):
     return subprocess.check_output(['git', *args], cwd=ROOT).decode('utf-8').strip()
+
+def read_manifest(path):
+    """Read release identity without pinning the audit to one package version."""
+    manifest = tomllib.loads(Path(path).read_text(encoding='utf-8'))
+    for field in ('name', 'version', 'repository'):
+        if not isinstance(manifest.get(field), str) or not manifest[field].strip():
+            raise ValueError(f"Manifest requires a nonempty {field}")
+    if manifest['repository'] != f"https://github.com/{manifest['name']}":
+        raise ValueError('Manifest repository must match the module identity')
+    return manifest
+
 
 def main():
     inventory = []
@@ -26,9 +37,9 @@ def main():
         if implementation or test or independent_validation or downstream:
             meaningful.append({'sha':sha,'purpose':git('show','-s','--format=%s',sha),'files':files})
     assert len(meaningful) >= 20, len(meaningful)
-    manifest = (ROOT/'moon.mod').read_text(encoding='utf-8')
-    assert 'Lucaswang5777/moontdms' in manifest and '0.2.1' in manifest
-    print(json.dumps({'production_inventory':inventory,'substantive_lines':total,
+    manifest = read_manifest(ROOT/'moon.mod')
+    print(json.dumps({'module':manifest['name'], 'version':manifest['version'],
+                      'production_inventory':inventory,'substantive_lines':total,
                       'physical_production_lines':sum(r['physical'] for r in inventory),
                       'conservative_engineering_commits':len(meaningful), 'commits':meaningful}, indent=2))
 

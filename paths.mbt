@@ -1,7 +1,8 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct ObjectPath {
   parts : Array[String]
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn ObjectPath::root() -> ObjectPath {

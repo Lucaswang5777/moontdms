@@ -1,15 +1,17 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct DataObject {
   path : ObjectPath
   properties : Array[Property]
   mut kind : DataType?
   values : Array[Value]
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct Document {
   objects : Array[DataObject]
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn Document::new() -> Document {

@@ -1,10 +1,11 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct WaveformAxis {
   increment : Double
   offset : Double
   start_time : Timestamp?
   count : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn DataObject::waveform(self : DataObject) -> WaveformAxis raise TdmsError {

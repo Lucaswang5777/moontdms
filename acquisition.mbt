@@ -1,26 +1,29 @@
 ///|
 /// Raw samples from one DAQmx scaler. Integer samples remain exact.
+#derive(Eq, Debug)
 pub(all) struct ScalerData {
   id : UInt32
   kind : DataType
   values : Array[Value]
-} derive(Eq, Debug)
+}
 
 ///|
 /// A DAQmx channel can have several independent scaler streams.
+#derive(Eq, Debug)
 pub(all) struct DaqChannel {
   path : ObjectPath
   scalers : Array[ScalerData]
   native_type : DataType?
-} derive(Eq, Debug)
+}
 
 ///|
 /// Metadata and ordinary raw samples; DAQmx streams live in daqmx.
 /// Call physical explicitly before exporting engineering values.
+#derive(Eq, Debug)
 pub(all) struct Acquisition {
   metadata : Document
   daqmx : Array[DaqChannel]
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn Acquisition::raw_channel(

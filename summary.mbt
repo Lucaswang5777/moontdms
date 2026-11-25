@@ -1,4 +1,5 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct Summary {
   total : Int32
   finite_count : Int32
@@ -8,7 +9,7 @@ pub(all) struct Summary {
   mean : Double?
   population_variance : Double?
   rms : Double?
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn DataObject::summary(self : DataObject) -> Summary raise TdmsError {

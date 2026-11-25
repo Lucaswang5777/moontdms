@@ -1,6 +1,6 @@
 # MoonTDMS
 
-纯 MoonBit 的 TDMS 2.0 测量数据交换库，模块 `Lucaswang5777/moontdms@0.2.1`。它把内存中的 TDMS 字节转换成有类型的对象、属性和通道，供采集接入、实验室数据整理和报表系统复用。核心库只依赖 MoonBit core，不依赖 Python、NI 运行时或本机动态库。
+纯 MoonBit 的 TDMS 2.0 测量数据交换库，模块 `Lucaswang5777/moontdms@0.2.2`。它把内存中的 TDMS 字节转换成有类型的对象、属性和通道，供采集接入、实验室数据整理和报表系统复用。核心库只依赖 MoonBit core，不依赖 Python、NI 运行时或本机动态库。
 
 ## 已实现范围
 
@@ -16,12 +16,12 @@
 
 ## 环境与安装
 
-验证工具链：`moonc v0.10.18+6c83a7f62`，`moon 0.1.20261028 (e1e1f15)`。CI 固定安装 `0.10.18+6c83a7f62`。目标为 wasm-gc、wasm、js、native；JS 需要 Node.js，Linux native 需要 C 工具链。本机 Windows 未安装 MSVC/Windows SDK，native 的执行结果以 Linux CI 为准。
+验证工具链：`moonc v0.10.22+124d61d05`，`moon 0.1.20261119 (738607b)`。CI 固定安装 `0.10.22+124d61d05`。目标为 wasm-gc、wasm、js、native；JS 需要 Node.js，Linux native 需要 C 工具链。本机 Windows 未安装 MSVC/Windows SDK，native 的执行结果以 Linux CI 为准。
 
 在新 MoonBit 模块中固定版本：
 
 ```sh
-moon add Lucaswang5777/moontdms@0.2.1
+moon add Lucaswang5777/moontdms@0.2.2
 ```
 
 在消费者 `moon.pkg` 中导入：

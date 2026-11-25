@@ -1,11 +1,12 @@
 ///|
+#derive(Eq, Debug)
 pub(all) struct SegmentInfo {
   offset : Int32
   raw_offset : Int32
   end_offset : Int32
   toc : UInt32
   big_endian : Bool
-} derive(Eq, Debug)
+}
 
 ///|
 fn flag(toc : UInt32, bit : UInt32) -> Bool {
