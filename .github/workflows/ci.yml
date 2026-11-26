@@ -32,7 +32,7 @@ jobs:
           printf '%s\n%s\n' "$versions" "$compiler"
           grep -Eq '^moon 0\.1\.20261119 \(738607b ' <<<"$versions"
           grep -Eq '^moonrun 0\.1\.20261119 \(738607b ' <<<"$versions"
-          grep -Fq 'moonc v0.10.22+124d61d05' <<<"$compiler"
+          grep -Fq 'v0.10.22+124d61d05' <<<"$compiler"
           {
             echo '### Validated MoonBit toolchain'
             echo '```text'
