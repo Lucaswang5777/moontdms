@@ -25,9 +25,20 @@ jobs:
           bash /tmp/install-moonbit.sh '0.10.22+124d61d05'
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - name: Toolchain and interfaces
+        shell: bash
         run: |
-          moon version --all
-          moonc -v
+          versions="$(moon version --all)"
+          compiler="$(moonc -v)"
+          printf '%s\n%s\n' "$versions" "$compiler"
+          grep -Eq '^moon 0\.1\.20261119 \(738607b ' <<<"$versions"
+          grep -Eq '^moonrun 0\.1\.20261119 \(738607b ' <<<"$versions"
+          grep -Fq 'moonc v0.10.22+124d61d05' <<<"$compiler"
+          {
+            echo '### Validated MoonBit toolchain'
+            echo '```text'
+            printf '%s\n%s\n' "$versions" "$compiler"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
           moon info --target all
           moon fmt --check
           git diff --exit-code
